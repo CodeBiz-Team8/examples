@@ -21,14 +21,7 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.ImageFormat
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.Rect
+import android.graphics.*
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -61,6 +54,7 @@ import kotlin.math.abs
 import org.tensorflow.lite.examples.posenet.lib.BodyPart
 import org.tensorflow.lite.examples.posenet.lib.Person
 import org.tensorflow.lite.examples.posenet.lib.Posenet
+import kotlin.math.*
 
 class PosenetActivity :
   Fragment(),
@@ -82,8 +76,11 @@ class PosenetActivity :
     Pair(BodyPart.RIGHT_KNEE, BodyPart.RIGHT_ANKLE)
   )
 
+  // new STUFF
+  private var t = false
+
   /** Threshold for confidence score. */
-  private val minConfidence = 0.5
+  private val minConfidence = 0.7
 
   /** Radius of circle used to draw keypoints.  */
   private val circleRadius = 8.0f
@@ -470,6 +467,21 @@ class PosenetActivity :
     paint.strokeWidth = 8.0f
   }
 
+  private fun getVecSize(v: Pair<Double, Double>) : Double {
+    return sqrt(v.first.pow(2.0) + v.second.pow(2.0))
+  }
+  private fun getAngle(p1: Pair<Pair<Float, Float>, Pair<Float, Float>>, p2: Pair<Pair<Float, Float>, Pair<Float, Float>>): Double {
+    var cosinus = 0.0
+    val v1 = Pair<Double, Double>((p1.second.first - p1.first.first).toDouble(),
+      (p1.second.second - p1.first.second).toDouble()
+    )
+    val v2 = Pair<Double, Double>((p2.second.first - p2.first.first).toDouble(),
+      (p2.second.second - p2.first.second).toDouble()
+    )
+    val inner_product = (v1.first * v2.first) + (v1.second * v2.second)
+    cosinus = inner_product / (getVecSize(v1) * getVecSize(v2))
+    return cosinus
+  }
   /** Draw bitmap on Canvas.   */
   private fun draw(canvas: Canvas, person: Person, bitmap: Bitmap) {
     canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
@@ -514,20 +526,47 @@ class PosenetActivity :
         canvas.drawCircle(adjustedX, adjustedY, circleRadius, paint)
       }
     }
-
     for (line in bodyJoints) {
       if (
         (person.keyPoints[line.first.ordinal].score > minConfidence) and
         (person.keyPoints[line.second.ordinal].score > minConfidence)
       ) {
         canvas.drawLine(
-          person.keyPoints[line.first.ordinal].position.x.toFloat() * widthRatio + left,
-          person.keyPoints[line.first.ordinal].position.y.toFloat() * heightRatio + top,
+          person.keyPoints[line.first.ordinal].position.x.toFloat() * widthRatio  + left ,
+          person.keyPoints[line.first.ordinal].position.y.toFloat() * heightRatio + top ,
           person.keyPoints[line.second.ordinal].position.x.toFloat() * widthRatio + left,
           person.keyPoints[line.second.ordinal].position.y.toFloat() * heightRatio + top,
           paint
         )
+        canvas.drawText(
+          "Pushups %.2f".format(person.keyPoints[6].position.x.toFloat()* widthRatio + left),
+          (15.0f * widthRatio),
+          (10.0f * heightRatio + bottom),paint)
+
+//        Log.i("left_shoulder", String.format("%.1f, %.1f",x_val, y_val))
+//        Log.i("right_shoulder", String.format("%.1f, %.1f",person.keyPoints[14].position.x.toFloat() * widthRatio + left,
+//          person.keyPoints[14].position.y.toFloat() * heightRatio + top))
       }
+    }
+
+    if (
+      (person.keyPoints[13].score > minConfidence) and
+      (person.keyPoints[15].score > minConfidence)
+    ) {
+      val hipPoint = Pair<Float, Float>(person.keyPoints[11].position.x.toFloat() * widthRatio  + left,
+        person.keyPoints[11].position.y.toFloat() * heightRatio + top)
+      val kneePoint = Pair<Float, Float>(person.keyPoints[13].position.x.toFloat() * widthRatio  + left,
+        person.keyPoints[13].position.y.toFloat() * heightRatio + top)
+      val anklePoint = Pair<Float, Float>(person.keyPoints[15].position.x.toFloat() * widthRatio  + left,
+        person.keyPoints[15].position.y.toFloat() * heightRatio + top)
+      val hipknee = Pair<Float, Float>(hipPoint.second - kneePoint.second, hipPoint.first- kneePoint.first)
+      val ankleknee = Pair<Float, Float>(anklePoint.second - kneePoint.second, anklePoint.first- kneePoint.first)
+      val kneeflex = (Math.atan2(hipknee.first.toDouble(), hipknee.second.toDouble()) -
+              Math.atan2(ankleknee.first.toDouble(), ankleknee.second.toDouble())) * (180/Math.PI)
+//        Log.i("angle", String.format("%.2f", kneeflex))
+      val line1 = Pair<Pair<Float, Float>, Pair<Float, Float>>(hipPoint, kneePoint)
+      val line2 = Pair<Pair<Float, Float>, Pair<Float, Float>>(anklePoint, kneePoint)
+      Log.i("angle", String.format("%.2f", acos(getAngle(line1, line2))*180/Math.PI))
     }
 
     canvas.drawText(
