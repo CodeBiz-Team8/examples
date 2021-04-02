@@ -80,7 +80,7 @@ class PosenetActivity :
   private var t = false
 
   /** Threshold for confidence score. */
-  private val minConfidence = 0.7
+  private val minConfidence = 0.65
 
   /** Radius of circle used to draw keypoints.  */
   private val circleRadius = 8.0f
@@ -538,14 +538,7 @@ class PosenetActivity :
           person.keyPoints[line.second.ordinal].position.y.toFloat() * heightRatio + top,
           paint
         )
-        canvas.drawText(
-          "Pushups %.2f".format(person.keyPoints[6].position.x.toFloat()* widthRatio + left),
-          (15.0f * widthRatio),
-          (10.0f * heightRatio + bottom),paint)
 
-//        Log.i("left_shoulder", String.format("%.1f, %.1f",x_val, y_val))
-//        Log.i("right_shoulder", String.format("%.1f, %.1f",person.keyPoints[14].position.x.toFloat() * widthRatio + left,
-//          person.keyPoints[14].position.y.toFloat() * heightRatio + top))
       }
     }
 
@@ -559,15 +552,34 @@ class PosenetActivity :
         person.keyPoints[13].position.y.toFloat() * heightRatio + top)
       val anklePoint = Pair<Float, Float>(person.keyPoints[15].position.x.toFloat() * widthRatio  + left,
         person.keyPoints[15].position.y.toFloat() * heightRatio + top)
-      val hipknee = Pair<Float, Float>(hipPoint.second - kneePoint.second, hipPoint.first- kneePoint.first)
-      val ankleknee = Pair<Float, Float>(anklePoint.second - kneePoint.second, anklePoint.first- kneePoint.first)
-      val kneeflex = (Math.atan2(hipknee.first.toDouble(), hipknee.second.toDouble()) -
-              Math.atan2(ankleknee.first.toDouble(), ankleknee.second.toDouble())) * (180/Math.PI)
+
 //        Log.i("angle", String.format("%.2f", kneeflex))
       val line1 = Pair<Pair<Float, Float>, Pair<Float, Float>>(hipPoint, kneePoint)
       val line2 = Pair<Pair<Float, Float>, Pair<Float, Float>>(anklePoint, kneePoint)
-      Log.i("angle", String.format("%.2f", acos(getAngle(line1, line2))*180/Math.PI))
+      val angle=acos(getAngle(line1, line2))*180/Math.PI
+      Log.i("angle", String.format("%.2f", angle))
+
+
+      //printing some values
+      if((angle<180) and (angle>160))
+      {
+        canvas.drawText(
+          "Standing... %.2f".format(angle),
+          (15.0f * widthRatio),
+          (10.0f * heightRatio + bottom),paint)
+      }
+      else if ((angle<=160) and (angle>=80))
+      {
+          canvas.drawText(
+            "Starting Squats... %.2f".format(angle),
+            (15.0f * widthRatio),
+            (10.0f * heightRatio + bottom),paint)
+      }
+
+
     }
+
+
 
     canvas.drawText(
       "Score: %.2f".format(person.score),
