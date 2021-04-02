@@ -77,7 +77,8 @@ class PosenetActivity :
   )
 
   // new STUFF
-  private var t = false
+  private var squats = 0
+  private var isSquating = false
 
   /** Threshold for confidence score. */
   private val minConfidence = 0.65
@@ -557,29 +558,34 @@ class PosenetActivity :
       val line1 = Pair<Pair<Float, Float>, Pair<Float, Float>>(hipPoint, kneePoint)
       val line2 = Pair<Pair<Float, Float>, Pair<Float, Float>>(anklePoint, kneePoint)
       val angle=acos(getAngle(line1, line2))*180/Math.PI
-      Log.i("angle", String.format("%.2f", angle))
+//      Log.i("angle", String.format("%.2f", angle))
 
 
       //printing some values
-      if((angle<180) and (angle>160))
+      if((angle<180) and (angle>160) && isSquating)
       {
-        canvas.drawText(
-          "Standing... %.2f".format(angle),
-          (15.0f * widthRatio),
-          (10.0f * heightRatio + bottom),paint)
+//        canvas.drawText(
+//          "Standing... %.2f".format(angle),
+//          (15.0f * widthRatio),
+//          (10.0f * heightRatio + bottom),paint)
+        isSquating = false
+        squats++
       }
-      else if ((angle<=160) and (angle>=80))
+      else if ((angle<=140) and (angle>=80) && !isSquating)
       {
-          canvas.drawText(
-            "Starting Squats... %.2f".format(angle),
-            (15.0f * widthRatio),
-            (10.0f * heightRatio + bottom),paint)
+//          canvas.drawText(
+//            "Starting Squats... %.2f".format(angle),
+//            (15.0f * widthRatio),
+//            (10.0f * heightRatio + bottom),paint)
+        isSquating = true
       }
-
-
     }
 
 
+    canvas.drawText(
+      "Squats so far %d".format(squats),
+      (15.0f * widthRatio),
+      (10.0f * heightRatio + bottom),paint)
 
     canvas.drawText(
       "Score: %.2f".format(person.score),
